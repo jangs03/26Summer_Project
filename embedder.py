@@ -2,7 +2,7 @@
 임베딩 계산 + 벡터 저장 모듈.
 
 - 모델: sentence-transformers (로컬 실행, 무료, 논문당 1회만 계산해서 캐싱)
-- 저장소: Chroma (로컬 파일 기반, 메타데이터 필터링이 내장되어 있어
+- 저장소: Chroma (팀 공유 서버 또는 로컬 파일, 메타데이터 필터링이 내장되어 있어
   "카테고리 필터 + 유사도 검색" 같은 하이브리드 쿼리를 바로 지원 -> 벤치마크의
   '키워드+임베딩 검색 상위 결과 합치기' 단계에서 바로 활용 가능)
 
@@ -16,6 +16,9 @@ from sentence_transformers import SentenceTransformer
 
 from config import (
     CHROMA_DIR,
+    CHROMA_HOST,
+    CHROMA_MODE,
+    CHROMA_PORT,
     COLLECTION_NAME,
     EMBEDDING_BATCH_SIZE,
     EMBEDDING_MODEL_NAME,
@@ -35,13 +38,27 @@ def get_model() -> SentenceTransformer:
 
 
 def get_collection():
+    """
+    CHROMA_MODE 설정에 따라 팀 공유 서버(HttpClient) 또는 로컬 파일(PersistentClient)에 붙는다.
+
+    - "http": 팀원 전체가 같은 서버에 접속 -> 항상 같은 데이터를 봄.
+              서버는 한 명(또는 상시 켜져 있는 머신)이 다음 명령으로 띄워둔다.
+                  chroma run --path ./data/chroma --host 0.0.0.0 --port 8000
+    - "persistent": 개인 로컬 파일. 서버 없이 혼자 테스트할 때만 사용.
+    """
     global _client, _collection
-    if _collection is None:
+    if _collection is not None:
+        return _collection
+
+    if CHROMA_MODE == "http":
+        _client = chromadb.HttpClient(host=CHROMA_HOST, port=CHROMA_PORT)
+    else:
         _client = chromadb.PersistentClient(path=str(CHROMA_DIR))
-        _collection = _client.get_or_create_collection(
-            name=COLLECTION_NAME,
-            metadata={"hnsw:space": "cosine"},
-        )
+
+    _collection = _client.get_or_create_collection(
+        name=COLLECTION_NAME,
+        metadata={"hnsw:space": "cosine"},
+    )
     return _collection
 
 
