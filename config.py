@@ -14,8 +14,19 @@ DATA_DIR = BASE_DIR / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 SQLITE_PATH = DATA_DIR / "papers.db"
-CHROMA_DIR = DATA_DIR / "chroma"
+CHROMA_DIR = DATA_DIR / "chroma"  # 서버를 띄우는 쪽(호스트)에서만 사용됨
 COLLECTION_NAME = "arxiv_papers"
+
+# ── Chroma 접속 모드 ─────────────────────────────────────
+# "http"       : 팀 공유 서버(HttpClient)로 접속. 팀원 전원이 같은 DB를 봄.
+# "persistent" : 로컬 파일(PersistentClient)로 접속. 개인 테스트/오프라인 작업용.
+CHROMA_MODE = "http"  # "http" 또는 "persistent"
+
+# CHROMA_MODE == "http" 일 때 사용.
+# 서버를 띄운 사람(또는 항상 켜져 있는 공유 머신)의 주소로 채워 넣기.
+# 사내망/VPN(Tailscale 등)으로 묶여있다면 사설 IP나 Tailscale 호스트명을 그대로 써도 됨.
+CHROMA_HOST = "localhost"   # 예: "100.101.102.103" (Tailscale IP) 또는 팀 공유 서버 IP
+CHROMA_PORT = 8000
 
 # ── 임베딩 모델 ──────────────────────────────────────────
 # 로컬에서 무료로 돌아가는 sentence-transformers 모델.
